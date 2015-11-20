@@ -12,51 +12,49 @@ public class ApiExample {
 	public static void main(String[] args) throws IOException {
 		String query = "couch";
 		
-		queryFor(query, 10);
+		queryFor(query, 100);
 	}
 	
 	private static void queryFor(String query, int quantity) throws IOException {
-		
 		int count = 0;
-		int failed = 0;
-		
-		int remaining = quantity;
+		queryFor(query, count, quantity);
+	}
+	
+	private static void queryFor(String query, int offset, int total) throws IOException {
+		int remaining = total;
 		
 		while (remaining > 0) {
-			
-			int pageFailed = 0;
 			int pageCount = 0;
 			
 			int size = remaining > GoogleImagesAPI.MAX_PAGE_SIZE ? GoogleImagesAPI.MAX_PAGE_SIZE : remaining;
 			
 			List<GsearchResult> results = GoogleImagesAPI.queryImagesByType(
-					count, size, query, Restriction.IMAGE_TYPE_PHOTO);
+					offset, size, query, Restriction.IMAGE_TYPE_PHOTO);
+			
+			if(results.isEmpty()) {
+				System.err.println("Out of range");
+				break;
+			}
 			
 			for(GsearchResult result: results) {
 				String url = result.getUrl();
-				System.out.println(url);
 				
 				String ext = extension(url);
+				if(ext.length() > 5) {
+					continue;
+				}
 				try {
-					FileDownloader.downloadAsFile(url, fixQuery(query)+(count+1)+ext);
+					System.out.println(url);
+					FileDownloader.downloadAsFile(url, fixQuery(query)+(offset+pageCount+1)+ext);
 					pageCount++;
 				} catch (IOException e) {
-					pageFailed++;
-					System.out.println("Failed downloading: "+url);
+					//Try again
 				}
 			}
 			
-			failed += pageFailed;
-			count += pageCount;
+			offset += pageCount;
 			remaining -= pageCount;
-			
-			pageCount = 0;
-			pageFailed = 0;
-			
-			System.out.println("Remaining: "+remaining);
 		}
-		
-		System.out.println("Finished");
 	}
 	
 	private static String fixQuery(String query) {
@@ -70,6 +68,10 @@ public class ApiExample {
 		if (i > 0) {
 			//including "."
 		    extension = fileName.substring(i);
+		    
+		    if (extension.contains("?")) {
+			    extension.substring(0, extension.indexOf('?'));
+		    }
 		}
 		
 		return extension;

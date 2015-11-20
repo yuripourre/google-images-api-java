@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.List;
 
 import br.com.etyllica.network.googleimages.api.Restriction;
@@ -59,6 +60,10 @@ public class GoogleImagesAPI {
 	public static List<GsearchResult> requestResults(String query, int page, int pageSize)
 			throws MalformedURLException, IOException {
 		String json = requestJson(query, page, pageSize);
+		
+		if (json.startsWith("{\"responseData\": null")) {
+			return new ArrayList<GsearchResult>();
+		}
 		
 		GoogleImageResponse response = new Gson().fromJson(json, GoogleImageResponse.class);
 		return response.getResponseData().getResults();
